@@ -1,20 +1,28 @@
 import sys, torch, argparse
 from transformers import GenerationConfig, LlamaForCausalLM, LlamaTokenizer
+from typing import List, Optional
+from langchain.callbacks.manager import CallbackManagerForLLMRun
+from langchain.llms.base import LLM
+from utils.prompter import Prompter
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--base_model", type=str)
+parser.add_argument("--base_model", type=str, required=True)
 parser.add_argument("--lora_weights", type=str)
 args = parser.parse_args()
 
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
-load_8bit = False
 base_model = args.base_model
 if args.lora_weights:
     from peft import PeftModel
     lora_weights = args.lora_weights
+else:
+    lora_weights = None
+
+load_8bit = False
+
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 tokenizer = LlamaTokenizer.from_pretrained(base_model)
+
 if device == "cuda":
     model = LlamaForCausalLM.from_pretrained(
         base_model,
@@ -77,3 +85,33 @@ def evaluate(
     s = generation_output.sequences[0]
     output = tokenizer.decode(s)
     return output
+
+class CustomLLM(LLM):
+    @property
+    def _llm_type(self) -> str:
+        return "custom"
+
+    def _call(
+        self,
+        prompt: str,
+        stop: Optional[List[str]] = None,
+        run_manager: Optional[CallbackManagerForLLMRun] = None,
+    ) -> str:
+        if stop is not None:
+            raise ValueError("stop kwargs are not permitted.")
+        return evaluate(prompt)
+
+llm = CustomLLM()
+
+prompter = Prompter()
+
+instruction = "Write a poem about a llama."
+print("Initial instruction: ", instruction)
+input = "Llamas are cute."
+print("Initial input: ", input)
+
+prompt = prompter.generate_prompt(instruction, input)
+print("Generated Prompt:", prompt)
+
+response = llm(prompt)
+print("Response: ", response)
