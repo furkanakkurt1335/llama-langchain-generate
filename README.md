@@ -2,7 +2,7 @@
 
 Generation scripts for using LLMs locally with [LangChain](https://python.langchain.com/en/latest/). Based on [tloen/alpaca-lora](https://github.com/tloen/alpaca-lora) and [jerryjliu/llama_index](https://github.com/jerryjliu/llama_index).
 
-## Example
+## Example using Alpaca
 
 - Instruction: Write a poem about a llama.
 - Input: Llamas are cute.
